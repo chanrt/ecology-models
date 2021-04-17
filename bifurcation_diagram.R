@@ -1,29 +1,36 @@
-# modified from https://magesblog.com/post/2012-03-17-logistic-map-feigenbaum-diagram/
-
-# range of R0
-my.R0 <- seq(0, 2.685, by = 0.001);
-
-# alterable parameters
-init_pop <- 0.1; 
-num_iterations <- 1000; 
-M <- 300;
-
-discrete.logistic <- function(R0, x0, N, M){
-  z <- 1:N;
-  z[1] <- x0;
-  for(i in c(1:(N-1))){
-    # Type function here
-    # z[i+1] <- R0 *z[i]  * (1 - z[i]);
-    z[i+1] <- z[i] * exp(R0 * (1 - z[i]))
-  }
-  z[c((N-M+1):N)];
+# function
+fn <- function(x, r)
+{
+  return (r * x * (1 - x))
 }
 
-library(compiler) 
-discrete.logistic <- cmpfun(discrete.logistic)
+# simulation parameters
+x0 = 0.5
+num_iterations = 1000
+num_consider = 300
 
-yfinal <- sapply(my.R0, discrete.logistic, init_pop, num_iterations, M)
-yfinal <- as.vector(yfinal)
-R0 <- sort(rep(my.R0, M)) 
+# range of r
+r_start = 2.5
+r_stop = 4
+r_step = 0.001
 
-plot(yfinal ~ R0, pch = '.', col = rgb(1,0,0,0.05), ylab = 'Final state')
+simulator <- function(r, x0, num_iterations, num_consider){
+
+  x = numeric(num_iterations)
+  x[1] = x0
+  for(i in 2:num_iterations)
+  {
+    x[i] = fn(x[i-1], r)
+  }
+
+  x[c((num_iterations - num_consider):num_iterations)]
+}
+# compiling the above function for faster speed
+require(compiler)
+simulator = cmpfun(simulator)
+
+r_vec = seq(from = r_start, to = r_stop, by = r_step)
+equilibrium_values <- sapply(r_vec, simulator, x0, num_iterations, num_consider)
+
+r = rep(r_vec, each = (num_consider + 1))
+plot(r, equilibrium_values, pch=".", col = rgb(0, 0, 0, 0.1), main = "Bifurcation Diagram")
